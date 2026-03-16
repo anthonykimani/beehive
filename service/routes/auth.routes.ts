@@ -3,6 +3,9 @@ import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
 import { env } from '../configs/env.config';
 import { ApiError } from '../middleware/error-handler';
+import { AppDataSource } from '../configs/orm.config';
+import { User } from '../models/user.entity';
+import { UserRepository } from '../repositories/user.repo';
 
 export const authRouter = Router();
 
@@ -58,11 +61,23 @@ authRouter.post('/wallet/verify', async (req, res: Response, next) => {
     // For now, accept any signature for development
     nonceStore.delete(walletAddress.toLowerCase());
 
-    const userId = uuidv4();
+    // Find or create user using custom repository
+    const userRepo = AppDataSource.getCustomRepository(UserRepository);
+    let user = await userRepo.findByWalletAddress(walletAddress);
+    
+    if (!user) {
+      user = userRepo.create({ 
+        walletAddress: walletAddress.toLowerCase(),
+        username: `user_${walletAddress.toLowerCase().slice(0, 8)}`,
+        displayName: `User ${walletAddress.toLowerCase().slice(0, 6)}...`,
+      });
+      user = await userRepo.save(user);
+    }
+
     const payload = {
-      userId,
-      walletAddress: walletAddress.toLowerCase(),
-      role: 'user',
+      userId: user.id,
+      walletAddress: user.walletAddress,
+      role: user.role,
     };
 
     const token = jwt.sign(payload, env.jwt.secret, {
@@ -74,9 +89,10 @@ authRouter.post('/wallet/verify', async (req, res: Response, next) => {
       data: {
         token,
         user: {
-          id: userId,
-          walletAddress: walletAddress.toLowerCase(),
-          role: 'user',
+          id: user.id,
+          walletAddress: user.walletAddress,
+          username: user.username,
+          role: user.role,
         },
       },
     });
@@ -95,12 +111,22 @@ authRouter.get('/me', async (req, res: Response, next) => {
     const token = authHeader.substring(7);
     const decoded = jwt.verify(token, env.jwt.secret) as any;
 
+    const userRepo = AppDataSource.getCustomRepository(UserRepository);
+    const user = await userRepo.findById(decoded.userId);
+
+    if (!user) {
+      throw new Error('User not found') as ApiError;
+    }
+
     res.json({
       success: true,
       data: {
-        id: decoded.userId,
-        walletAddress: decoded.walletAddress,
-        role: decoded.role,
+        id: user.id,
+        walletAddress: user.walletAddress,
+        username: user.username,
+        displayName: user.displayName,
+        role: user.role,
+        isVerified: user.isVerified,
       },
     });
   } catch (error) {

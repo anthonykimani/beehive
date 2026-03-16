@@ -12,7 +12,7 @@ export const AppDataSource = new DataSource({
   database: process.env.DATABASE_NAME || 'swarmfund',
   synchronize: process.env.NODE_ENV !== 'production',
   logging: process.env.NODE_ENV === 'development',
-  entities: [`${__dirname}/models/*.entity{.ts,.js}`],
-  migrations: [`${__dirname}/migrations/*{.ts,.js}`],
-  subscribers: [`${__dirname}/subscribers/*{.ts,.js}`],
+  entities: [`${__dirname}/../models/*.entity{.ts,.js}`],
+  migrations: [`${__dirname}/../migrations/*{.ts,.js}`],
+  subscribers: [`${__dirname}/../subscribers/*{.ts,.js}`],
 });
