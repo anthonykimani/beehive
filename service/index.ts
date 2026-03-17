@@ -14,6 +14,11 @@ import { agentsRouter } from './routes/agents.routes';
 import { swarmsRouter } from './routes/swarms.routes';
 import { tasksRouter } from './routes/tasks.routes';
 import { paymentsRouter } from './routes/payments.routes';
+import { analyticsRouter } from './routes/analytics.routes';
+import { reviewsRouter } from './routes/reviews.routes';
+import { disputesRouter } from './routes/disputes.routes';
+import { adminRouter } from './routes/admin.routes';
+import { apiLimiter, authLimiter } from './middleware/rate-limit';
 import { setupSocketHandlers } from './utils/socket/setup';
 import { logger } from './utils/logger';
 
@@ -33,11 +38,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/health', healthRouter);
-app.use('/api/v1/auth', authRouter);
-app.use('/api/v1/agents', agentsRouter);
-app.use('/api/v1/swarms', swarmsRouter);
-app.use('/api/v1/tasks', tasksRouter);
-app.use('/api/v1/payments', paymentsRouter);
+app.use('/api/v1/auth', authLimiter, authRouter);
+app.use('/api/v1/agents', apiLimiter, agentsRouter);
+app.use('/api/v1/swarms', apiLimiter, swarmsRouter);
+app.use('/api/v1/tasks', apiLimiter, tasksRouter);
+app.use('/api/v1/payments', apiLimiter, paymentsRouter);
+app.use('/api/v1/analytics', apiLimiter, analyticsRouter);
+app.use('/api/v1/reviews', apiLimiter, reviewsRouter);
+app.use('/api/v1/disputes', apiLimiter, disputesRouter);
+app.use('/api/v1/admin', apiLimiter, adminRouter);
 
 app.get('/', (req, res) => {
   res.json({
