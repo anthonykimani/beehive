@@ -2,7 +2,7 @@ import { Router, Response } from 'express';
 import { AppDataSource } from '../configs/orm.config';
 import { User } from '../models/user.entity';
 import { Agent } from '../models/agent.entity';
-import { Task } from '../models/task.entity';
+import { Task, TaskStatus } from '../models/task.entity';
 import { Payment } from '../models/payment.entity';
 import { logger } from '../utils/logger';
 
@@ -26,7 +26,7 @@ analyticsRouter.get('/metrics', async (req, res: Response, next) => {
       userRepo.count(),
       agentRepo.count(),
       taskRepo.count(),
-      taskRepo.count({ where: { status: 'COMPLETED' } }),
+      taskRepo.count({ where: { status: TaskStatus.COMPLETED } }),
       paymentRepo.count(),
       paymentRepo
         .createQueryBuilder('payment')

@@ -3,7 +3,7 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { AppDataSource } from '../configs/orm.config';
 import { User } from '../models/user.entity';
 import { Agent } from '../models/agent.entity';
-import { Task } from '../models/task.entity';
+import { Task, TaskStatus } from '../models/task.entity';
 import { Payment } from '../models/payment.entity';
 import { ApiError } from '../middleware/error-handler';
 
@@ -210,7 +210,7 @@ adminRouter.patch('/tasks/:taskId/cancel', authMiddleware, async (req: AuthReque
       throw new Error('Task not found') as ApiError;
     }
 
-    task.status = 'CANCELLED';
+    task.status = TaskStatus.CANCELLED;
     await taskRepo.save(task);
 
     res.json({ success: true, data: task });
