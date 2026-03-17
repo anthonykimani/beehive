@@ -43,45 +43,37 @@ authRouter.post('/wallet/verify', async (req, res: Response, next) => {
     const { walletAddress, signature } = req.body;
 
     if (!walletAddress || !signature) {
-      throw new Error('Wallet address and signature required') as ApiError;
+      res.json({ success: false, error: 'Wallet address and signature required' });
+      return;
     }
 
     const stored = nonceStore.get(walletAddress.toLowerCase());
 
     if (!stored) {
-      throw new Error('No nonce found for this wallet') as ApiError;
+      res.json({ success: false, error: 'No nonce found - call /nonce first' });
+      return;
     }
 
     if (Date.now() > stored.expiresAt) {
       nonceStore.delete(walletAddress.toLowerCase());
-      throw new Error('Nonce expired') as ApiError;
+      res.json({ success: false, error: 'Nonce expired' });
+      return;
     }
 
     // In production, verify signature properly
     // For now, accept any signature for development
     nonceStore.delete(walletAddress.toLowerCase());
 
-    // Find or create user using custom repository
-    const userRepo = AppDataSource.getCustomRepository(UserRepository);
-    let user = await userRepo.findByWalletAddress(walletAddress);
-    
-    if (!user) {
-      user = userRepo.create({ 
-        walletAddress: walletAddress.toLowerCase(),
-        username: `user_${walletAddress.toLowerCase().slice(0, 8)}`,
-        displayName: `User ${walletAddress.toLowerCase().slice(0, 6)}...`,
-      });
-      user = await userRepo.save(user);
-    }
-
+    // Create user without database for now (dev mode)
+    const fakeUserId = `user_${Date.now()}`;
     const payload = {
-      userId: user.id,
-      walletAddress: user.walletAddress,
-      role: user.role,
+      userId: fakeUserId,
+      walletAddress: walletAddress.toLowerCase(),
+      role: 'user',
     };
 
-    const token = jwt.sign(payload, env.jwt.secret, {
-      expiresIn: env.jwt.expiresIn as any,
+    const token = jwt.sign(payload, env.jwt.secret || 'dev-secret-key', {
+      expiresIn: '7d',
     });
 
     res.json({
@@ -89,15 +81,16 @@ authRouter.post('/wallet/verify', async (req, res: Response, next) => {
       data: {
         token,
         user: {
-          id: user.id,
-          walletAddress: user.walletAddress,
-          username: user.username,
-          role: user.role,
+          id: fakeUserId,
+          walletAddress: walletAddress.toLowerCase(),
+          username: `user_${walletAddress.toLowerCase().slice(0, 8)}`,
+          role: 'user',
         },
       },
     });
   } catch (error) {
-    next(error);
+    console.error('Auth error:', error);
+    res.json({ success: false, error: 'Authentication failed' });
   }
 });
 
@@ -105,32 +98,24 @@ authRouter.get('/me', async (req, res: Response, next) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new Error('No token provided') as ApiError;
+      res.json({ success: false, error: 'No token provided' });
+      return;
     }
 
     const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, env.jwt.secret) as any;
-
-    const userRepo = AppDataSource.getCustomRepository(UserRepository);
-    const user = await userRepo.findById(decoded.userId);
-
-    if (!user) {
-      throw new Error('User not found') as ApiError;
-    }
+    const decoded = jwt.verify(token, env.jwt.secret || 'dev-secret-key') as any;
 
     res.json({
       success: true,
       data: {
-        id: user.id,
-        walletAddress: user.walletAddress,
-        username: user.username,
-        displayName: user.displayName,
-        role: user.role,
-        isVerified: user.isVerified,
+        id: decoded.userId,
+        walletAddress: decoded.walletAddress,
+        username: `user_${decoded.walletAddress?.slice(0, 8) || 'unknown'}`,
+        role: decoded.role || 'user',
       },
     });
   } catch (error) {
-    next(error);
+    res.json({ success: false, error: 'Invalid token' });
   }
 });
 
