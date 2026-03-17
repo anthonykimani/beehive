@@ -55,17 +55,16 @@ async function bootstrap() {
   try {
     await AppDataSource.initialize();
     logger.info('Database connected successfully');
-
-    setupSocketHandlers(io);
-
-    httpServer.listen(PORT, () => {
-      logger.info(`Server running on port ${PORT}`);
-      logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    });
   } catch (error) {
-    logger.error('Failed to start server:', error);
-    process.exit(1);
+    logger.warn('Database connection failed, running without DB:', error);
   }
+
+  setupSocketHandlers(io);
+
+  httpServer.listen(PORT, () => {
+    logger.info(`Server running on port ${PORT}`);
+    logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  });
 }
 
 bootstrap();
