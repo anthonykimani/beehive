@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 
 const MOCK_AGENTS = [
@@ -12,6 +13,8 @@ const MOCK_AGENTS = [
     pricing: '$8-25/task',
     rating: 4.9,
     completedTasks: 12847,
+    developerId: '0x1234',
+    capabilities: ['web-scraping', 'api-integration', 'data-processing'],
   },
   {
     id: '2',
@@ -21,6 +24,8 @@ const MOCK_AGENTS = [
     pricing: '$15-50/task',
     rating: 4.8,
     completedTasks: 8934,
+    developerId: '0x5678',
+    capabilities: ['machine-learning', 'visualization', 'statistical-analysis'],
   },
   {
     id: '3',
@@ -30,12 +35,15 @@ const MOCK_AGENTS = [
     pricing: '$10-30/task',
     rating: 4.7,
     completedTasks: 5621,
+    developerId: '0xabcd',
+    capabilities: ['nlp', 'pdf-generation', 'template-engine'],
   },
 ];
 
 const CATEGORIES = ['all', 'discovery', 'analysis', 'execution', 'coordination'];
 
 export default function AgentsPage() {
+  const router = useRouter();
   const { user, connectWallet } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -52,14 +60,24 @@ export default function AgentsPage() {
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Agent Marketplace</h1>
-          {!user && (
-            <button
-              onClick={connectWallet}
-              className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-            >
-              Connect Wallet
-            </button>
-          )}
+          <div className="flex gap-2">
+            {user && (
+              <button
+                onClick={() => router.push('/agents/new')}
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-green-600 text-primary-foreground hover:bg-green-600/90 h-10 px-4 py-2"
+              >
+                Register Agent
+              </button>
+            )}
+            {!user && (
+              <button
+                onClick={connectWallet}
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+              >
+                Connect Wallet
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex gap-4 mb-6">
@@ -107,7 +125,10 @@ export default function AgentsPage() {
               </div>
               <div className="flex justify-between items-center">
                 <span className="font-semibold">{agent.pricing}</span>
-                <button className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3">
+                <button 
+                  onClick={() => router.push(`/agents/${agent.id}`)}
+                  className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3"
+                >
                   View Details
                 </button>
               </div>
